@@ -2,12 +2,17 @@ package pg_astro
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
+	"fmt"
 	"log"
 	"net"
-	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
+
+var printMx sync.Mutex
 
 type Server struct {
 	Addr         string
@@ -18,9 +23,11 @@ type Server struct {
 	conns      map[*conn]struct{}
 	mu         sync.Mutex
 	inShutdown bool
+	done       chan struct{}
 }
 
 func (srv *Server) ListenAndServe() error {
+	srv.done = make(chan struct{})
 	addr := srv.Addr
 	if addr == "" {
 		addr = ":8080"
@@ -70,32 +77,83 @@ func (srv *Server) handle(conn *conn) error {
 		conn.Close()
 		srv.deleteConn(conn)
 	}()
-	r := bufio.NewReader(conn)
-	w := bufio.NewWriter(conn)
-	scanr := bufio.NewScanner(r)
 
-	sc := make(chan bool)
-	deadline := time.After(conn.IdleTimeout)
-	for {
-		go func(s chan bool) {
-			s <- scanr.Scan()
-		}(sc)
-		select {
-		case <-deadline:
-			return nil
-		case scanned := <-sc:
-			if !scanned {
-				if err := scanr.Err(); err != nil {
-					return err
+	w := bufio.NewWriter(conn)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	var lastTime = time.Now()
+
+	go func() {
+		var b [4096]byte
+		buffer := make([]byte, 0)
+
+		for {
+
+			len, err := conn.Read(b[:])
+			if err != nil {
+				if errors.Is(err, syscall.ETIMEDOUT) {
+					if srv.inShutdown {
+						break
+					}
+					if time.Since(lastTime) > 5*time.Minute {
+						break
+					} else {
+						lastTime = time.Now()
+						continue
+					}
 				}
-				return nil
+				// TODO: Log error
+				break
 			}
-			w.WriteString(strings.ToUpper(scanr.Text()) + "\n")
-			w.Flush()
-			deadline = time.After(conn.IdleTimeout)
+
+			extractPackage(b[:len], buffer)
+
+		}
+		wg.Done()
+	}()
+
+	w.WriteString(`{"node":"0xFFFFFFFF","list":0}`)
+	w.Flush()
+
+	wg.Wait()
+
+	return nil
+}
+
+func extractPackage(message []byte, buffer []byte) {
+	s := bytes.Trim(message, "\n \t")
+	endOfPackage := bytes.Index(s, []byte("}"))
+
+	if endOfPackage == -1 {
+		// String doesn't contain '}'
+		buffer = append(buffer, s...)
+	} else {
+		// String contains '}'
+		startOfPackage := bytes.LastIndex(buffer, []byte("{"))
+
+		if startOfPackage != -1 {
+			// Start of package in the buffer
+			pkg := buffer[startOfPackage:]
+			buffer = buffer[:startOfPackage]
+			pkg = append(pkg, s[:endOfPackage+1]...)
+			//parsePackage(pkg)
+			fmt.Println(string(pkg))
+			extractPackage(s[endOfPackage+1:], buffer)
+		} else {
+			// Start of package doesn't exists in buffer
+			startOfPackage = bytes.Index(s, []byte("{"))
+
+			if startOfPackage == -1 {
+				fmt.Println("Wrong package received")
+			} else {
+				//parsePackage(s[startOfPackage, endOfPackage + 1])
+				fmt.Println(string(s[startOfPackage : endOfPackage+1]))
+				extractPackage(s[endOfPackage+1:], buffer)
+			}
 		}
 	}
-	return nil
 }
 
 func (srv *Server) deleteConn(conn *conn) {
@@ -109,6 +167,7 @@ func (srv *Server) Shutdown() {
 	srv.inShutdown = true
 	log.Println("shutting down...")
 	srv.listener.Close()
+	close(srv.done)
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {

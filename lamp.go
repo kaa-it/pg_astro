@@ -22,22 +22,22 @@ type ComplexProfile struct {
 }
 
 type Lamp struct {
-	Dir             *int               `json:"dir,omitempty"`
-	Level           *int               `json:"level,omitempty"`
-	Nid             *int               `json:"nid,omitempty"`
-	Group           *int               `json:"group,omitempty"`
+	Dir             int                `json:"dir"`
+	Level           int                `json:"level"`
+	Nid             int                `json:"nid"`
+	Group           int                `json:"group"`
 	Mac             string             `json:"mac"`
-	Smac            *string            `json:"smac,omitempty"`
-	Rssi            *int               `json:"rssi,omitempty"`
-	Devt            *int               `json:"devt,omitempty"`
-	Devm            *int               `json:"devm,omitempty"`
+	Smac            string             `json:"smac"`
+	Rssi            int                `json:"rssi"`
+	Devt            int                `json:"devt"`
+	Devm            int                `json:"devm"`
 	Eblk            *int               `json:"eblk,omitempty"`
 	Cycles          *string            `json:"cycles,omitempty"`
 	Runh            *int               `json:"runh,omitempty"`
 	Nvsc            *int               `json:"nvsc,omitempty"`
 	Lpwm            *int               `json:"lpwm,omitempty"`
 	Cpwm            *int               `json:"cpwm,omitempty"`
-	Mrssi           *int               `json:"mrssi,omitempty"`
+	Mrssi           int                `json:"mrssi"`
 	Rfch            *int               `json:"rfch,omitempty"`
 	Rfpwr           *int               `json:"rfpwr,omitempty"`
 	Pwm             *int               `json:"pwm,omitempty"`
@@ -47,7 +47,7 @@ type Lamp struct {
 	Temp            *int               `json:"temp,omitempty"`
 	Energy          *int               `json:"energy,omitempty"`
 	Rng             *int               `json:"rng,omitempty"`
-	Tlevel          *int               `json:"tlevel,omitempty"`
+	Tlevel          int                `json:"tlevel"`
 	Date            *int64             `json:"date,omitempty"`
 	Lat             *float64           `json:"lat,omitempty"`
 	Lng             *float64           `json:"lon,omitempty"`
@@ -65,26 +65,22 @@ type Lamp struct {
 func (l *Lamp) Apply(p *Package) {
 	dir, ok := (*p)["dir"]
 	if ok {
-		l.Dir = new(int)
-		*l.Dir = int(dir.(float64))
+		l.Dir = int(dir.(float64))
 	}
 
 	level, ok := (*p)["level"]
 	if ok {
-		l.Level = new(int)
-		*l.Level = int(level.(float64))
+		l.Level = int(level.(float64))
 	}
 
 	nid, ok := (*p)["nid"]
 	if ok {
-		l.Nid = new(int)
-		*l.Nid = int(nid.(float64))
+		l.Nid = int(nid.(float64))
 	}
 
 	group, ok := (*p)["group"]
 	if ok {
-		l.Group = new(int)
-		*l.Group = int(group.(float64))
+		l.Group = int(group.(float64))
 	}
 
 	mac, ok := (*p)["mac"]
@@ -94,26 +90,22 @@ func (l *Lamp) Apply(p *Package) {
 
 	smac, ok := (*p)["smac"]
 	if ok {
-		l.Smac = new(string)
-		*l.Smac = smac.(string)
+		l.Smac = smac.(string)
 	}
 
 	rssi, ok := (*p)["rssi"]
 	if ok {
-		l.Rssi = new(int)
-		*l.Rssi = int(rssi.(float64))
+		l.Rssi = int(rssi.(float64))
 	}
 
 	devt, ok := (*p)["devt"]
 	if ok {
-		l.Devt = new(int)
-		*l.Devt = int(devt.(float64))
+		l.Devt = int(devt.(float64))
 	}
 
 	devm, ok := (*p)["devm"]
 	if ok {
-		l.Devm = new(int)
-		*l.Devm = int(devm.(float64))
+		l.Devm = int(devm.(float64))
 	}
 
 	eblk, ok := (*p)["eblk"]
@@ -154,8 +146,7 @@ func (l *Lamp) Apply(p *Package) {
 
 	mrssi, ok := (*p)["mrssi"]
 	if ok {
-		l.Mrssi = new(int)
-		*l.Mrssi = int(mrssi.(float64))
+		l.Mrssi = int(mrssi.(float64))
 	}
 
 	rfch, ok := (*p)["rfch"]
@@ -214,8 +205,7 @@ func (l *Lamp) Apply(p *Package) {
 
 	tlevel, ok := (*p)["tlevel"]
 	if ok {
-		l.Tlevel = new(int)
-		*l.Tlevel = int(tlevel.(float64))
+		l.Tlevel = int(tlevel.(float64))
 	}
 
 	date, ok := (*p)["date"]
