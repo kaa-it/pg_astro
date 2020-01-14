@@ -1,7 +1,7 @@
 package pg_astro
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -21,7 +21,7 @@ func InitSignals(wg *sync.WaitGroup, srv *Server) {
 			signal.Stop(signalChannel)
 			close(signalChannel)
 			srv.Shutdown()
-			fmt.Println("Signals thread done....")
+			log.Println("Signals thread done....")
 			wg.Done()
 			return
 		}

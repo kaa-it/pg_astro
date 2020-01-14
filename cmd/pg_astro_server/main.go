@@ -8,17 +8,18 @@ import (
 
 const (
 	maxReadBytes          = 5000
-	idleTimeout           = 5 // Seconds
-	idleControllerTimeout = 5 // Minutes
+	idleTimeout           = 5 * time.Second
+	idleControllerTimeout = 5 * time.Minute
 	port                  = "9896"
 )
 
 func main() {
 
 	srv := pg_astro.Server{
-		Addr:         ":" + port,
-		IdleTimeout:  idleControllerTimeout * time.Second,
-		MaxReadBytes: maxReadBytes,
+		Addr:                  ":" + port,
+		IdleTimeout:           idleTimeout,
+		IdleControllerTimeout: idleControllerTimeout,
+		MaxReadBytes:          maxReadBytes,
 	}
 
 	var wg sync.WaitGroup

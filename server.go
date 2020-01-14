@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -15,9 +14,10 @@ import (
 var printMx sync.Mutex
 
 type Server struct {
-	Addr         string
-	IdleTimeout  time.Duration
-	MaxReadBytes int64
+	Addr                  string
+	IdleTimeout           time.Duration
+	IdleControllerTimeout time.Duration
+	MaxReadBytes          int64
 
 	listener   net.Listener
 	conns      map[*conn]struct{}
@@ -97,14 +97,15 @@ func (srv *Server) handle(conn *conn) error {
 					if srv.inShutdown {
 						break
 					}
-					if time.Since(lastTime) > 5*time.Minute {
+					if time.Since(lastTime) > srv.IdleControllerTimeout {
+						log.Println("Controller connection timeout is expired")
 						break
 					} else {
 						lastTime = time.Now()
 						continue
 					}
 				}
-				// TODO: Log error
+				log.Printf("Package read failed: %s\n", err)
 				break
 			}
 
@@ -139,17 +140,17 @@ func extractPackage(message []byte, buffer []byte) {
 			buffer = buffer[:startOfPackage]
 			pkg = append(pkg, s[:endOfPackage+1]...)
 			//parsePackage(pkg)
-			fmt.Println(string(pkg))
+			log.Println(string(pkg))
 			extractPackage(s[endOfPackage+1:], buffer)
 		} else {
 			// Start of package doesn't exists in buffer
 			startOfPackage = bytes.Index(s, []byte("{"))
 
 			if startOfPackage == -1 {
-				fmt.Println("Wrong package received")
+				log.Println("Wrong package received")
 			} else {
 				//parsePackage(s[startOfPackage, endOfPackage + 1])
-				fmt.Println(string(s[startOfPackage : endOfPackage+1]))
+				log.Println(string(s[startOfPackage : endOfPackage+1]))
 				extractPackage(s[endOfPackage+1:], buffer)
 			}
 		}
