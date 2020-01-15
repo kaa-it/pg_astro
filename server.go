@@ -3,11 +3,9 @@ package pg_astro
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"log"
 	"net"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -87,13 +85,14 @@ func (srv *Server) handle(conn *conn) error {
 
 	go func() {
 		var b [4096]byte
-		buffer := make([]byte, 0)
+		//buffer := make([]byte, 0)
 
 		for {
 
 			len, err := conn.Read(b[:])
 			if err != nil {
-				if errors.Is(err, syscall.ETIMEDOUT) {
+				e, ok := err.(net.Error)
+				if ok && e.Timeout() {
 					if srv.inShutdown {
 						break
 					}
@@ -105,11 +104,12 @@ func (srv *Server) handle(conn *conn) error {
 						continue
 					}
 				}
-				log.Printf("Package read failed: %s\n", err)
+				log.Printf("Package read failed: %s\n", err.Error())
 				break
 			}
 
-			extractPackage(b[:len], buffer)
+			//extractPackage(b[:len], buffer)
+			log.Println("==> " + string(b[:len]))
 
 		}
 		wg.Done()
@@ -140,7 +140,7 @@ func extractPackage(message []byte, buffer []byte) {
 			buffer = buffer[:startOfPackage]
 			pkg = append(pkg, s[:endOfPackage+1]...)
 			//parsePackage(pkg)
-			log.Println(string(pkg))
+			//log.Println(string(pkg))
 			extractPackage(s[endOfPackage+1:], buffer)
 		} else {
 			// Start of package doesn't exists in buffer
@@ -150,7 +150,7 @@ func extractPackage(message []byte, buffer []byte) {
 				log.Println("Wrong package received")
 			} else {
 				//parsePackage(s[startOfPackage, endOfPackage + 1])
-				log.Println(string(s[startOfPackage : endOfPackage+1]))
+				//log.Println(string(s[startOfPackage : endOfPackage+1]))
 				extractPackage(s[endOfPackage+1:], buffer)
 			}
 		}
